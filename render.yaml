@@ -1,9 +1,11 @@
-databases:
-  - name: planning-poker-redis
-    databaseName: planning-poker-redis
-    plan: free
-
 services:
+  # Redis
+  - type: redis
+    name: planning-poker-redis
+    ipAllowList: []
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
   # Backend API
   - type: web
     name: planning-poker-backend
@@ -14,7 +16,8 @@ services:
     rootDir: backend
     envVars:
       - key: REDIS_URL
-        fromDatabase:
+        fromService:
+          type: redis
           name: planning-poker-redis
           property: connectionString
       - key: ENVIRONMENT
