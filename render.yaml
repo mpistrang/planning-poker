@@ -41,12 +41,12 @@ services:
         fromService:
           type: web
           name: planning-poker-backend
-          property: host
+          property: hostUrl
       - key: VITE_API_URL
         fromService:
           type: web
           name: planning-poker-backend
-          property: host
+          property: hostUrl
     headers:
       - path: /*
         name: Cache-Control
