@@ -1,5 +1,7 @@
 # Planning Poker
 
+> **Note**: This is a sample project built with [Claude Code](https://claude.ai/code) to demonstrate full-stack application development with real-time features. It is not a published product or production-ready service.
+
 A real-time planning poker application for agile scrum teams, built with React, TypeScript, FastAPI, and WebSockets.
 
 ## Features
@@ -223,10 +225,23 @@ Infrastructure as Code with **Terraform** can be added later.
 - `votes_revealed(votes)` - Revealed votes
 - `round_reset(round)` - Round reset
 
+## About This Project
+
+This application was built as a demonstration project using [Claude Code](https://claude.ai/code), an AI-powered development tool. The entire codebase, from initial architecture to deployment configuration, was created through collaborative AI-assisted development.
+
+### Built With Claude Code
+
+- **Architecture Design**: Planned the full-stack structure with FastAPI backend, React frontend, and WebSocket communication
+- **Code Generation**: Generated all application code including backend services, frontend components, and deployment configurations
+- **Deployment**: Configured and deployed to Render with automated CI/CD
+- **Documentation**: Created comprehensive documentation for development and deployment
+
+This project showcases how AI-assisted development can rapidly build full-featured applications with modern best practices.
+
 ## License
 
 MIT
 
-## Contributing
+## Disclaimer
 
-Contributions welcome! Please open an issue or submit a pull request.
+This is a sample/demonstration project and is not intended for production use without further security hardening, testing, and infrastructure improvements.
