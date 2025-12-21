@@ -28,10 +28,8 @@ services:
     healthCheckPath: /health
 
   # Frontend static site
-  - type: web
+  - type: static_site
     name: planning-poker-frontend
-    runtime: static
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     rootDir: frontend
