@@ -1,5 +1,4 @@
 import { User } from './user'
-import { Room } from './room'
 
 export interface JoinRoomData {
   room_code: string

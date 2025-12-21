@@ -8,7 +8,7 @@ export const VoteResults: React.FC = () => {
 
   const votes = Object.entries(room.users)
     .filter(([_, user]) => user.current_vote)
-    .map(([userId, user]) => ({
+    .map(([_userId, user]) => ({
       name: user.name,
       vote: user.current_vote!
     }))
