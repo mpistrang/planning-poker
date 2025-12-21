@@ -176,17 +176,18 @@ The easiest way to deploy this app is using [Render](https://render.com) with th
    ./setup-github.sh
    ```
 
-2. **Deploy to Render** using the UI (2 minutes):
+2. **Deploy to Render** using the UI:
    - Go to https://dashboard.render.com/
    - Click "New +" → "Blueprint"
    - Connect your GitHub repository
    - Render will auto-detect `render.yaml`
    - Click "Apply"
+   - Wait for initial builds to complete (~5-10 min)
 
-3. **Set CORS** (one-time):
-   - Go to `planning-poker-backend` service
-   - Environment tab → Set `CORS_ORIGINS` to your frontend URL
-   - Save changes
+3. **Configure environment variables** (required):
+   - **Backend**: Set `CORS_ORIGINS` to your frontend URL
+   - **Frontend**: Set `VITE_WS_URL` and `VITE_API_URL` to your backend URL
+   - Rebuild frontend after setting variables
 
 ✅ **Done!** All three services (Redis, Backend, Frontend) deployed with free tier.
 

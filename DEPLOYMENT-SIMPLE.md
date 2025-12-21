@@ -45,22 +45,44 @@ git push -u origin main
    - Service names will be pre-filled
    - Click "Apply"
 
-5. **Set Frontend CORS** (one-time manual step):
-   - After services are created, go to `planning-poker-backend`
-   - Go to "Environment" tab
-   - Find `CORS_ORIGINS` variable
-   - Set value to: `https://planning-poker-frontend.onrender.com`
-   - Click "Save Changes"
-
-### 3. Wait for Builds
+### 3. Wait for Initial Builds
 
 - Redis: ~1 minute (instant)
 - Backend: ~5 minutes (pip install + deploy)
 - Frontend: ~3 minutes (npm install + build)
 
-### 4. Get Your URLs
+**Note your service URLs** from the dashboard - you'll need them for the next step.
 
-Once deployed, you'll see:
+### 4. Configure Environment Variables (Required)
+
+The Blueprint creates the services but environment variables need manual configuration:
+
+**A. Configure Backend:**
+1. Go to `planning-poker-backend` service
+2. Click "Environment" tab
+3. Set `CORS_ORIGINS` to your **frontend URL**
+   - Example: `https://planning-poker-frontend-xyz.onrender.com`
+4. Click "Save Changes"
+
+**B. Configure Frontend:**
+1. Go to `planning-poker-frontend` service
+2. Click "Environment" tab
+3. Add/Update these variables:
+   - `VITE_WS_URL`: Your **backend URL** (e.g., `https://planning-poker-backend-xyz.onrender.com`)
+   - `VITE_API_URL`: Your **backend URL** (same as above)
+4. Click "Save Changes"
+
+### 5. Rebuild Frontend
+
+After setting the environment variables:
+1. Stay on `planning-poker-frontend` service
+2. Click "Manual Deploy" dropdown
+3. Select "Clear build cache & deploy"
+4. Wait ~3 minutes for rebuild
+
+### 6. Access Your App
+
+Once the rebuild completes, you'll have:
 - **Frontend**: `https://planning-poker-frontend.onrender.com`
 - **Backend**: `https://planning-poker-backend.onrender.com`
 
@@ -78,17 +100,20 @@ The `render.yaml` file automatically creates:
 
 ## Environment Variables
 
-These are auto-configured by `render.yaml`:
+**Auto-configured by `render.yaml`:**
 
 **Backend**:
-- `REDIS_URL` - Automatically linked to Redis
-- `ENVIRONMENT` - Set to "production"
-- `LOG_LEVEL` - Set to "INFO"
-- `CORS_ORIGINS` - **Set this manually** to frontend URL
+- `REDIS_URL` - ✅ Automatically linked to Redis
+- `ENVIRONMENT` - ✅ Set to "production"
+- `LOG_LEVEL` - ✅ Set to "INFO"
+- `CORS_ORIGINS` - ⚠️ **Must set manually** to frontend URL
 
 **Frontend**:
-- `VITE_WS_URL` - Automatically set to backend URL
-- `VITE_API_URL` - Automatically set to backend URL
+- `VITE_WS_URL` - ⚠️ **Must set manually** to backend URL
+- `VITE_API_URL` - ⚠️ **Must set manually** to backend URL
+
+**Why manual configuration?**
+The `render.yaml` tries to use `fromService.property: hostUrl` but this doesn't always populate correctly during initial deployment. Manual configuration ensures the correct URLs are used.
 
 ## Troubleshooting
 
@@ -107,13 +132,22 @@ These are auto-configured by `render.yaml`:
 
 ### "CORS error in browser"
 - Make sure you set `CORS_ORIGINS` in backend
-- Should be: `https://planning-poker-frontend.onrender.com`
+- Should be your **actual frontend URL**: `https://planning-poker-frontend-xyz.onrender.com`
 - Redeploy backend after changing
 
-### "Can't connect to WebSocket"
-- Check browser console for errors
-- Verify `VITE_WS_URL` is set correctly in frontend
-- Should be: `https://planning-poker-backend.onrender.com`
+### "Can't connect to WebSocket" or "WebSocket connection to wss://planning-poker-backend-xyz failed"
+- **Most common issue**: Frontend environment variables not set or set incorrectly
+- Go to frontend service → Environment tab
+- Verify `VITE_WS_URL` is your **full backend URL**: `https://planning-poker-backend-xyz.onrender.com`
+- **Important**: Must include `https://` and full `.onrender.com` domain
+- After fixing, **rebuild the frontend** (Clear build cache & deploy)
+
+### "Connecting to incomplete domain" (e.g., `wss://planning-poker-backend-xyz/socket.io`)
+- Environment variable is missing `.onrender.com`
+- Check frontend Environment tab for `VITE_WS_URL`
+- Should be full URL: `https://planning-poker-backend-xyz.onrender.com`
+- Not partial: ~~`planning-poker-backend-xyz`~~
+- Rebuild frontend after fixing
 
 ## Free Tier Limitations
 
