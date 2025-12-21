@@ -1,15 +1,13 @@
-services:
-  # Redis database
-  - type: redis
-    name: planning-poker-redis
+databases:
+  - name: planning-poker-redis
+    databaseName: planning-poker-redis
     plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
 
+services:
   # Backend API
   - type: web
     name: planning-poker-backend
-    runtime: python
+    env: python
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -28,8 +26,9 @@ services:
     healthCheckPath: /health
 
   # Frontend static site
-  - type: static_site
+  - type: web
     name: planning-poker-frontend
+    env: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     rootDir: frontend
