@@ -6,7 +6,6 @@ Uses the Render API to deploy services defined in render.yaml.
 
 import os
 import sys
-import json
 import requests
 from typing import Dict, Any, Optional
 
@@ -78,23 +77,25 @@ class RenderDeployer:
         cors_origins = f"https://{frontend_url}" if frontend_url else "http://localhost:5173"
 
         data = {
+            "type": "web_service",
             "name": "planning-poker-backend",
             "ownerId": owner_id,
-            "type": "web_service",
             "repo": repo_url,
             "autoDeploy": "yes",
-            "rootDir": "backend",
-            "runtime": "python",
-            "plan": "free",
-            "buildCommand": "pip install -r requirements.txt",
-            "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
-            "healthCheckPath": "/health",
-            "envVars": [
-                {"key": "REDIS_URL", "value": redis_url},
-                {"key": "ENVIRONMENT", "value": "production"},
-                {"key": "LOG_LEVEL", "value": "INFO"},
-                {"key": "CORS_ORIGINS", "value": cors_origins}
-            ]
+            "serviceDetails": {
+                "env": "python",
+                "plan": "free",
+                "buildCommand": "pip install -r requirements.txt",
+                "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+                "healthCheckPath": "/health",
+                "envVars": [
+                    {"key": "REDIS_URL", "value": redis_url},
+                    {"key": "ENVIRONMENT", "value": "production"},
+                    {"key": "LOG_LEVEL", "value": "INFO"},
+                    {"key": "CORS_ORIGINS", "value": cors_origins}
+                ]
+            },
+            "rootDir": "backend"
         }
 
         backend_data = self._request("POST", "/services", data)
@@ -109,30 +110,32 @@ class RenderDeployer:
         print("\n🎨 Creating frontend static site...")
 
         data = {
+            "type": "static_site",
             "name": "planning-poker-frontend",
             "ownerId": owner_id,
-            "type": "static_site",
             "repo": repo_url,
             "autoDeploy": "yes",
-            "rootDir": "frontend",
-            "buildCommand": "npm install && npm run build",
-            "publishPath": "dist",
-            "envVars": [
-                {"key": "VITE_WS_URL", "value": f"https://{backend_url}"},
-                {"key": "VITE_API_URL", "value": f"https://{backend_url}"}
-            ],
-            "headers": [
-                {
-                    "path": "/*",
-                    "name": "Cache-Control",
-                    "value": "public, max-age=0, must-revalidate"
-                },
-                {
-                    "path": "/assets/*",
-                    "name": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
+            "serviceDetails": {
+                "buildCommand": "npm install && npm run build",
+                "publishPath": "dist",
+                "envVars": [
+                    {"key": "VITE_WS_URL", "value": f"https://{backend_url}"},
+                    {"key": "VITE_API_URL", "value": f"https://{backend_url}"}
+                ],
+                "headers": [
+                    {
+                        "path": "/*",
+                        "name": "Cache-Control",
+                        "value": "public, max-age=0, must-revalidate"
+                    },
+                    {
+                        "path": "/assets/*",
+                        "name": "Cache-Control",
+                        "value": "public, max-age=31536000, immutable"
+                    }
+                ]
+            },
+            "rootDir": "frontend"
         }
 
         frontend_data = self._request("POST", "/services", data)
@@ -147,12 +150,14 @@ class RenderDeployer:
         print(f"\n🔄 Updating backend CORS to allow {frontend_url}...")
 
         data = {
-            "envVars": [
-                {"key": "CORS_ORIGINS", "value": f"https://{frontend_url}"}
-            ]
+            "serviceDetails": {
+                "envVars": [
+                    {"key": "CORS_ORIGINS", "value": f"https://{frontend_url}"}
+                ]
+            }
         }
 
-        self._request("PUT", f"/services/{service_id}", data)
+        self._request("PATCH", f"/services/{service_id}", data)
         print("✅ CORS settings updated!")
 
     def deploy(self, repo_url: str):
