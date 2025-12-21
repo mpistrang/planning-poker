@@ -28,10 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount Socket.IO
-app.mount("/", socket_app)
-
-
+# Health check endpoint (must be before mounting Socket.IO)
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -39,6 +36,10 @@ async def health_check():
         "status": "healthy",
         "environment": settings.environment
     }
+
+
+# Mount Socket.IO at root (this catches all other routes)
+app.mount("/", socket_app)
 
 
 @app.on_event("startup")
