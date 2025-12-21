@@ -1,193 +1,163 @@
 # Render Deployment Guide
 
-This guide covers deploying the Planning Poker app to Render using the automated deployment script.
+Deploy the Planning Poker app to Render using the `render.yaml` blueprint:
+- ✅ Supports free tier
+- ✅ Creates all 3 services at once
+- ✅ Auto-configures environment variables
+- ✅ Takes ~2 minutes of clicking
 
 ## Prerequisites
 
-1. **Render Account**: Sign up at https://render.com (free tier available)
-2. **GitHub Account**: Repository must be on GitHub
-3. **Python 3.7+**: For running the deployment script
-4. **Requests library**: `pip install requests`
+1. **GitHub account** with your code pushed
+2. **Render account** (free) - https://render.com
 
-## Step 1: Create Render Account
+## Deployment Steps
 
-1. Go to https://render.com
-2. Sign up for a free account
-3. Verify your email
-
-## Step 2: Create Render API Key
-
-1. Go to https://dashboard.render.com/
-2. Click on your profile → Account Settings
-3. Navigate to **API Keys** section
-4. Click **Create API Key**
-5. Give it a name (e.g., "Planning Poker Deployment")
-6. Copy the API key (you won't see it again!)
-
-## Step 3: Connect GitHub to Render
-
-**IMPORTANT**: You must connect your GitHub account to Render before the script can deploy.
-
-1. Go to https://dashboard.render.com/
-2. Click **New +** → **Web Service**
-3. Click **Connect GitHub** (this is a one-time OAuth authorization)
-4. Authorize Render to access your repositories
-5. **Cancel** the service creation (we just needed to connect GitHub)
-
-## Step 4: Create GitHub Repository
-
-If you haven't already pushed the code to GitHub:
+### 1. Push Code to GitHub (if not done already)
 
 ```bash
-# Create a new repository on GitHub (via web interface)
-# Then push your code:
+# If you haven't set up GitHub yet:
+./setup-github.sh
 
+# Or manually:
 git remote add origin https://github.com/YOUR_USERNAME/planning-poker.git
 git branch -M main
 git push -u origin main
 ```
 
-## Step 5: Set Environment Variables
+### 2. Deploy via Render UI
 
-```bash
-# Set your Render API key
-export RENDER_API_KEY='rnd_xxxxxxxxxxxxxxxxxxxxx'
+1. **Go to Render Dashboard**: https://dashboard.render.com/
 
-# Set your GitHub repository URL
-export GITHUB_REPO_URL='https://github.com/YOUR_USERNAME/planning-poker'
-```
+2. **Click "New +" → "Blueprint"**
 
-## Step 6: Run Deployment Script
+3. **Connect Your Repository**:
+   - Click "Connect account" if not already connected
+   - Select your `planning-poker` repository
+   - Click "Connect"
 
-```bash
-# Make script executable
-chmod +x deploy-render.py
+4. **Configure Blueprint**:
+   - Render will detect `render.yaml` automatically
+   - Service names will be pre-filled
+   - Click "Apply"
 
-# Install required package
-pip install requests
+### 3. Wait for Initial Builds
 
-# Run deployment
-python3 deploy-render.py
-```
+- Redis: ~1 minute (instant)
+- Backend: ~5 minutes (pip install + deploy)
+- Frontend: ~3 minutes (npm install + build)
 
-The script will:
-1. Create a Redis instance
-2. Create the backend web service
-3. Create the frontend static site
-4. Configure environment variables automatically
-5. Set up proper CORS between frontend and backend
+**Note your service URLs** from the dashboard - you'll need them for the next step.
 
-## Step 7: Monitor Deployment
+### 4. Configure Environment Variables (Required)
 
-1. Go to https://dashboard.render.com/
-2. You should see three services:
-   - `planning-poker-redis` (Redis)
-   - `planning-poker-backend` (Web Service)
-   - `planning-poker-frontend` (Static Site)
+The Blueprint creates the services but environment variables need manual configuration:
 
-3. Click on each service to monitor build progress
-4. Initial builds take ~5-10 minutes
+**A. Configure Backend:**
+1. Go to `planning-poker-backend` service
+2. Click "Environment" tab
+3. Set `CORS_ORIGINS` to your **frontend URL**
+   - Example: `https://planning-poker-frontend-xyz.onrender.com`
+4. Click "Save Changes"
 
-## Step 8: Access Your App
+**B. Configure Frontend:**
+1. Go to `planning-poker-frontend` service
+2. Click "Environment" tab
+3. Add/Update these variables:
+   - `VITE_WS_URL`: Your **backend URL** (e.g., `https://planning-poker-backend-xyz.onrender.com`)
+   - `VITE_API_URL`: Your **backend URL** (same as above)
+4. Click "Save Changes"
 
-Once deployment completes, you'll see the URLs in the script output:
+### 5. Rebuild Frontend
 
-```
-Frontend: https://planning-poker-frontend.onrender.com
-Backend:  https://planning-poker-backend.onrender.com
-```
+After setting the environment variables:
+1. Stay on `planning-poker-frontend` service
+2. Click "Manual Deploy" dropdown
+3. Select "Clear build cache & deploy"
+4. Wait ~3 minutes for rebuild
 
-Visit the frontend URL to use your deployed app!
+### 6. Access Your App
+
+Once the rebuild completes, you'll have:
+- **Frontend**: `https://planning-poker-frontend.onrender.com`
+- **Backend**: `https://planning-poker-backend.onrender.com`
+
+Click the frontend URL to use your app!
+
+## What Gets Created
+
+The `render.yaml` file automatically creates:
+
+| Service | Type | What It Does |
+|---------|------|--------------|
+| planning-poker-redis | Redis | Stores room data (25MB free) |
+| planning-poker-backend | Web Service | Python FastAPI + WebSockets |
+| planning-poker-frontend | Static Site | React app |
+
+## Environment Variables
+
+**Auto-configured by `render.yaml`:**
+
+**Backend**:
+- `REDIS_URL` - ✅ Automatically linked to Redis
+- `ENVIRONMENT` - ✅ Set to "production"
+- `LOG_LEVEL` - ✅ Set to "INFO"
+- `CORS_ORIGINS` - ⚠️ **Must set manually** to frontend URL
+
+**Frontend**:
+- `VITE_WS_URL` - ⚠️ **Must set manually** to backend URL
+- `VITE_API_URL` - ⚠️ **Must set manually** to backend URL
+
+**Why manual configuration?**
+The `render.yaml` tries to use `fromService.property: hostUrl` but this doesn't always populate correctly during initial deployment. Manual configuration ensures the correct URLs are used.
 
 ## Troubleshooting
 
-### Build Failures
+### "Repository not found"
+- Make sure you connected GitHub to Render
+- Check repository visibility (public or Render has access)
 
-**Backend build fails:**
-- Check `requirements.txt` is present in `backend/` directory
-- View logs in Render dashboard
+### "Build failed"
+**Backend**:
+- Check if `requirements.txt` exists in `backend/` folder
+- View build logs for specific errors
 
-**Frontend build fails:**
-- Check `package.json` is present in `frontend/` directory
-- Ensure build script is: `npm install && npm run build`
+**Frontend**:
+- Check if `package.json` exists in `frontend/` folder
+- Ensure `dist` folder is created during build
 
-### Runtime Errors
+### "CORS error in browser"
+- Make sure you set `CORS_ORIGINS` in backend
+- Should be your **actual frontend URL**: `https://planning-poker-frontend-xyz.onrender.com`
+- Redeploy backend after changing
 
-**Backend can't connect to Redis:**
-- Check that `REDIS_URL` environment variable is set correctly
-- Redis should be in the same region as your backend
+### "Can't connect to WebSocket" or "WebSocket connection to wss://planning-poker-backend-xyz failed"
+- **Most common issue**: Frontend environment variables not set or set incorrectly
+- Go to frontend service → Environment tab
+- Verify `VITE_WS_URL` is your **full backend URL**: `https://planning-poker-backend-xyz.onrender.com`
+- **Important**: Must include `https://` and full `.onrender.com` domain
+- After fixing, **rebuild the frontend** (Clear build cache & deploy)
 
-**Frontend can't connect to backend:**
-- Check CORS settings in backend
-- Verify `VITE_WS_URL` and `VITE_API_URL` are set correctly
-- Check browser console for errors
-
-### CORS Issues
-
-If you see CORS errors in the browser console:
-
-1. Go to backend service settings
-2. Check `CORS_ORIGINS` environment variable includes your frontend URL
-3. Should be: `https://planning-poker-frontend.onrender.com`
-
-## Manual Deployment (Alternative)
-
-If you prefer to deploy manually via Render UI instead of the script:
-
-### 1. Create Redis
-- Dashboard → New → Redis
-- Name: `planning-poker-redis`
-- Plan: Free
-- Copy the **Internal Connection String**
-
-### 2. Create Backend
-- Dashboard → New → Web Service
-- Connect your repository
-- Name: `planning-poker-backend`
-- Root Directory: `backend`
-- Runtime: Python 3
-- Build Command: `pip install -r requirements.txt`
-- Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Plan: Free
-
-**Environment Variables:**
-```
-REDIS_URL=<paste Internal Connection String from Redis>
-ENVIRONMENT=production
-LOG_LEVEL=INFO
-CORS_ORIGINS=https://planning-poker-frontend.onrender.com
-```
-
-### 3. Create Frontend
-- Dashboard → New → Static Site
-- Connect same repository
-- Name: `planning-poker-frontend`
-- Root Directory: `frontend`
-- Build Command: `npm install && npm run build`
-- Publish Directory: `dist`
-- Plan: Free
-
-**Environment Variables:**
-```
-VITE_WS_URL=https://planning-poker-backend.onrender.com
-VITE_API_URL=https://planning-poker-backend.onrender.com
-```
+### "Connecting to incomplete domain" (e.g., `wss://planning-poker-backend-xyz/socket.io`)
+- Environment variable is missing `.onrender.com`
+- Check frontend Environment tab for `VITE_WS_URL`
+- Should be full URL: `https://planning-poker-backend-xyz.onrender.com`
+- Not partial: ~~`planning-poker-backend-xyz`~~
+- Rebuild frontend after fixing
 
 ## Free Tier Limitations
 
-Render's free tier includes:
+- ✅ 750 hours/month per service (enough for 24/7)
+- ✅ 25MB Redis storage
+- ✅ Automatic HTTPS
+- ⚠️ Services sleep after 15 minutes of inactivity
+- ⚠️ Cold start takes ~30 seconds on first request
 
-- ✅ 750 hours/month per service
-- ✅ Auto-sleep after 15 minutes of inactivity
-- ✅ First request after sleep takes ~30 seconds (cold start)
-- ✅ Redis: 25 MB storage
-- ✅ Automatic SSL certificates
+Perfect for demos and testing. Upgrade to paid ($7/month) for no cold starts.
 
-For production use, consider upgrading to paid plans to avoid cold starts.
+## Updating Your App
 
-## Updating Your Deployment
-
-After pushing changes to GitHub:
+To deploy changes:
 
 ```bash
 git add .
@@ -195,31 +165,35 @@ git commit -m "Your changes"
 git push
 ```
 
-Render will automatically rebuild and redeploy (auto-deploy is enabled).
+Render auto-deploys on push (this is configured in `render.yaml`).
 
-To disable auto-deploy:
-- Go to service settings
-- Turn off "Auto-Deploy"
+## Alternative: Manual Service Creation
 
-## Useful Commands
+If you prefer to create services one-by-one instead of using the Blueprint, you can manually create each service in the Render dashboard:
 
-### View Logs
-```bash
-# In Render dashboard, click on service → Logs tab
-```
+1. **Create Redis** (type: Redis, plan: free)
+2. **Create Backend** (type: Web Service, env: python, link to Redis via REDIS_URL)
+3. **Create Frontend** (type: Web, env: static, link to Backend via VITE_WS_URL and VITE_API_URL)
 
-### Manual Deploy Trigger
-```bash
-# In Render dashboard, click on service → Manual Deploy
-```
+This approach gives you more control but requires more manual configuration.
 
-### Delete All Services
-```bash
-# Go to each service → Settings → Delete Service
-```
+## Cost Breakdown
 
-## Support
+**Free Tier**: $0/month
+- 3 services (Redis + Backend + Frontend)
+- 750 hours/month each
+- Auto-sleep after 15 min
+- Perfect for demos
 
-- Render Documentation: https://render.com/docs
-- Render Community: https://community.render.com/
-- GitHub Issues: [Your repo URL]/issues
+**Paid Tier**: ~$21/month
+- Redis: $7/month (no sleep)
+- Backend: $7/month (no sleep)
+- Frontend: $0 (static sites are free!)
+- No cold starts
+- Better for production
+
+## Need Help?
+
+- Check build logs in Render dashboard
+- Render documentation: https://render.com/docs
+- GitHub Issues: Report problems in your repository issues

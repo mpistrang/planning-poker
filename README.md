@@ -193,7 +193,7 @@ The easiest way to deploy this app is using [Render](https://render.com) with th
 
 ✅ **Done!** All three services (Redis, Backend, Frontend) deployed with free tier.
 
-📖 **Detailed instructions**: See [`DEPLOYMENT-SIMPLE.md`](DEPLOYMENT-SIMPLE.md)
+📖 **Detailed instructions**: See [`DEPLOYMENT.md`](DEPLOYMENT.md)
 
 ### Alternative: AWS Deployment
 
