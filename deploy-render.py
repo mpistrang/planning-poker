@@ -21,7 +21,7 @@ class RenderDeployer:
             "Content-Type": "application/json"
         }
 
-    def _request(self, method: str, endpoint: str, data: Optional[Dict] = None) -> Dict[str, Any]:
+    def _request(self, method: str, endpoint: str, data: Optional[Dict] = None, allow_404: bool = False) -> Dict[str, Any]:
         """Make API request to Render"""
         url = f"{RENDER_API_BASE}{endpoint}"
         response = requests.request(
@@ -32,6 +32,8 @@ class RenderDeployer:
         )
 
         if response.status_code >= 400:
+            if allow_404 and response.status_code == 404:
+                return {}
             print(f"❌ API Error {response.status_code}: {response.text}")
             sys.exit(1)
 
@@ -51,12 +53,46 @@ class RenderDeployer:
         print(f"✅ Found owner: {owner_name} ({owner_id})")
         return owner_id
 
-    def create_redis(self, owner_id: str) -> Dict[str, Any]:
-        """Create Redis instance"""
-        print("\n📦 Creating Redis instance...")
+    def find_service_by_name(self, name: str, service_type: str) -> Optional[Dict[str, Any]]:
+        """Find a service by name and type"""
+        services = self._request("GET", "/services")
 
+        for service_item in services:
+            service = service_item.get("service", {})
+            if service.get("name") == name and service.get("type") == service_type:
+                return service
+
+        return None
+
+    def find_redis_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """Find Redis instance by name"""
+        redis_list = self._request("GET", "/redis")
+
+        for redis_item in redis_list:
+            if redis_item.get("name") == name:
+                return redis_item
+
+        return None
+
+    def create_redis(self, owner_id: str) -> Dict[str, Any]:
+        """Create or get existing Redis instance"""
+        name = "planning-poker-redis"
+
+        # Check if Redis already exists
+        print(f"\n📦 Checking for existing Redis instance: {name}")
+        existing_redis = self.find_redis_by_name(name)
+
+        if existing_redis:
+            redis_id = existing_redis.get("id")
+            redis_url = existing_redis.get("connectionInfo", {}).get("internalConnectionString")
+            print(f"✅ Using existing Redis: {redis_id}")
+            print(f"   URL: {redis_url}")
+            return existing_redis
+
+        # Create new Redis instance
+        print(f"📦 Creating new Redis instance: {name}")
         data = {
-            "name": "planning-poker-redis",
+            "name": name,
             "plan": "free",
             "maxmemoryPolicy": "allkeys-lru",
             "ownerId": owner_id
@@ -71,14 +107,26 @@ class RenderDeployer:
         return redis_data
 
     def create_backend(self, owner_id: str, repo_url: str, redis_url: str, frontend_url: Optional[str] = None) -> Dict[str, Any]:
-        """Create backend web service"""
-        print("\n🚀 Creating backend web service...")
+        """Create or get existing backend web service"""
+        name = "planning-poker-backend"
 
+        # Check if backend already exists
+        print(f"\n🚀 Checking for existing backend service: {name}")
+        existing_service = self.find_service_by_name(name, "web_service")
+
+        if existing_service:
+            backend_url = existing_service.get("serviceDetails", {}).get("url")
+            print(f"✅ Using existing backend service")
+            print(f"   URL: https://{backend_url}")
+            return {"service": existing_service}
+
+        # Create new backend service
+        print(f"🚀 Creating new backend service: {name}")
         cors_origins = f"https://{frontend_url}" if frontend_url else "http://localhost:5173"
 
         data = {
             "type": "web_service",
-            "name": "planning-poker-backend",
+            "name": name,
             "ownerId": owner_id,
             "repo": repo_url,
             "autoDeploy": "yes",
@@ -106,12 +154,24 @@ class RenderDeployer:
         return backend_data
 
     def create_frontend(self, owner_id: str, repo_url: str, backend_url: str) -> Dict[str, Any]:
-        """Create frontend static site"""
-        print("\n🎨 Creating frontend static site...")
+        """Create or get existing frontend static site"""
+        name = "planning-poker-frontend"
 
+        # Check if frontend already exists
+        print(f"\n🎨 Checking for existing frontend service: {name}")
+        existing_service = self.find_service_by_name(name, "static_site")
+
+        if existing_service:
+            frontend_url = existing_service.get("serviceDetails", {}).get("url")
+            print(f"✅ Using existing frontend service")
+            print(f"   URL: https://{frontend_url}")
+            return {"service": existing_service}
+
+        # Create new frontend service
+        print(f"🎨 Creating new frontend service: {name}")
         data = {
             "type": "static_site",
-            "name": "planning-poker-frontend",
+            "name": name,
             "ownerId": owner_id,
             "repo": repo_url,
             "autoDeploy": "yes",
