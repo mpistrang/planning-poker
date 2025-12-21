@@ -167,22 +167,37 @@ VITE_WS_URL=http://localhost:8008
 
 ## Production Deployment
 
-### Frontend (Static Site)
-Build the frontend for production:
-```bash
-cd frontend
-npm run build
-```
+### Deploy to Render (Recommended - Free Tier Available)
 
-Deploy the `dist/` folder to S3 + CloudFront or any static hosting service.
+The easiest way to deploy this app is using [Render](https://render.com) with the included `render.yaml` blueprint:
 
-### Backend (AWS)
-Options for deploying the backend:
-- **ECS/Fargate**: Container-based deployment
-- **EC2**: Traditional server deployment
-- **Lambda**: Serverless (requires adapter)
+1. **Push code to GitHub** (if not already done):
+   ```bash
+   ./setup-github.sh
+   ```
 
-Use **ElastiCache** for Redis in production.
+2. **Deploy to Render** using the UI (2 minutes):
+   - Go to https://dashboard.render.com/
+   - Click "New +" → "Blueprint"
+   - Connect your GitHub repository
+   - Render will auto-detect `render.yaml`
+   - Click "Apply"
+
+3. **Set CORS** (one-time):
+   - Go to `planning-poker-backend` service
+   - Environment tab → Set `CORS_ORIGINS` to your frontend URL
+   - Save changes
+
+✅ **Done!** All three services (Redis, Backend, Frontend) deployed with free tier.
+
+📖 **Detailed instructions**: See [`DEPLOYMENT-SIMPLE.md`](DEPLOYMENT-SIMPLE.md)
+
+### Alternative: AWS Deployment
+
+For AWS deployment:
+- **Frontend**: Build with `npm run build`, deploy `dist/` to S3 + CloudFront
+- **Backend**: Deploy to ECS/Fargate or EC2
+- **Redis**: Use ElastiCache
 
 Infrastructure as Code with **Terraform** can be added later.
 
