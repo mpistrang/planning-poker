@@ -109,7 +109,7 @@ The `render.yaml` file automatically creates:
 - `VITE_API_URL` - ⚠️ **Must set manually** to backend URL
 
 **Why manual configuration?**
-The `render.yaml` tries to use `fromService.property: hostUrl` but this doesn't always populate correctly during initial deployment. Manual configuration ensures the correct URLs are used.
+The `render.yaml` uses `fromService.property: host` which only provides the service hostname (e.g., `planning-poker-backend-xyz`) without the full domain. You must manually set the complete URLs with `https://` and `.onrender.com` for the WebSocket connection to work.
 
 ## Troubleshooting
 

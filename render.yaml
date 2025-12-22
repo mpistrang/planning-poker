@@ -11,7 +11,7 @@ services:
     name: planning-poker-backend
     env: python
     plan: free
-    runtime: python-3.11
+    # Python version is specified in backend/.python-version (3.11.9)
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     rootDir: backend
@@ -37,16 +37,21 @@ services:
     staticPublishPath: dist
     rootDir: frontend
     envVars:
+      # NOTE: These environment variables will be set with incomplete values (just hostname)
+      # After deployment, manually update them to full URLs in the Render dashboard:
+      # VITE_WS_URL: https://planning-poker-backend-xyz.onrender.com
+      # VITE_API_URL: https://planning-poker-backend-xyz.onrender.com
+      # Then rebuild the frontend for changes to take effect
       - key: VITE_WS_URL
         fromService:
           type: web
           name: planning-poker-backend
-          property: hostUrl
+          property: host
       - key: VITE_API_URL
         fromService:
           type: web
           name: planning-poker-backend
-          property: hostUrl
+          property: host
     headers:
       - path: /*
         name: Cache-Control
