@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 sessions: Dict[str, Dict[str, str]] = {}
 
 # Valid vote options
-VALID_VOTES = {"0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"}
+VALID_VOTES = {"0", ".5", "1", "2", "3", "5", "8", "13", "21", "?", "☕"}
 
 
 @sio.event
