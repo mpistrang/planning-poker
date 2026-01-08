@@ -10,13 +10,16 @@ import { useSocket } from '../contexts/SocketContext'
 
 export const Room: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { connected } = useSocket()
   const { room, joinRoom, leaveRoom, error, clearError } = useRoom()
   const [hasJoined, setHasJoined] = useState(false)
   const joinAttemptedRef = useRef(false)
   const leaveRoomRef = useRef(leaveRoom)
+  const [nameInput, setNameInput] = useState('')
+  const [showNamePrompt, setShowNamePrompt] = useState(false)
+  const [showCopiedBanner, setShowCopiedBanner] = useState(false)
 
   const userName = searchParams.get('name')
 
@@ -26,8 +29,14 @@ export const Room: React.FC = () => {
   }, [leaveRoom])
 
   useEffect(() => {
-    if (!roomCode || !userName) {
+    if (!roomCode) {
       navigate('/')
+      return
+    }
+
+    // If no name provided, show prompt
+    if (!userName) {
+      setShowNamePrompt(true)
       return
     }
 
@@ -40,23 +49,76 @@ export const Room: React.FC = () => {
 
   // Cleanup effect - only runs on unmount
   useEffect(() => {
+    console.log('Room component mounted')
     return () => {
+      console.log('Room component unmounting, joinAttempted:', joinAttemptedRef.current)
       if (joinAttemptedRef.current) {
         leaveRoomRef.current()
       }
     }
   }, [])
 
-  const handleCopyRoomCode = () => {
+  const handleCopyRoomLink = () => {
     if (room) {
-      navigator.clipboard.writeText(room.room_code)
-      alert('Room code copied to clipboard!')
+      const roomUrl = `${window.location.origin}/room/${room.room_code}`
+      navigator.clipboard.writeText(roomUrl)
+      setShowCopiedBanner(true)
+      setTimeout(() => {
+        setShowCopiedBanner(false)
+      }, 3000)
     }
   }
 
   const handleLeaveRoom = () => {
     leaveRoom()
     navigate('/')
+  }
+
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!nameInput.trim()) {
+      alert('Please enter your name')
+      return
+    }
+    // Update URL with name parameter
+    setSearchParams({ name: nameInput })
+    setShowNamePrompt(false)
+  }
+
+  if (showNamePrompt) {
+    return (
+      <Layout>
+        <div className="max-w-md mx-auto">
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              Join Room {roomCode}
+            </h2>
+            <form onSubmit={handleNameSubmit}>
+              <div className="mb-6">
+                <label htmlFor="nameInput" className="block text-sm font-medium text-gray-700 mb-2">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  id="nameInput"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter your name"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 transition-colors"
+              >
+                Join Room
+              </button>
+            </form>
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   if (!connected) {
@@ -83,6 +145,11 @@ export const Room: React.FC = () => {
 
   return (
     <Layout>
+      {showCopiedBanner && (
+        <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <span className="block sm:inline">Room link copied to clipboard!</span>
+        </div>
+      )}
       {error && (
         <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <span className="block sm:inline">{error}</span>
@@ -103,10 +170,10 @@ export const Room: React.FC = () => {
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={handleCopyRoomCode}
+              onClick={handleCopyRoomLink}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
             >
-              Copy Code
+              Copy Link
             </button>
             <button
               onClick={handleLeaveRoom}
