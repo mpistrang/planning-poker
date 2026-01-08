@@ -52,6 +52,10 @@ services:
           type: web
           name: planning-poker-backend
           property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     headers:
       - path: /*
         name: Cache-Control
