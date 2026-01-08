@@ -16,8 +16,14 @@ export const Room: React.FC = () => {
   const { room, joinRoom, leaveRoom, error, clearError } = useRoom()
   const [hasJoined, setHasJoined] = useState(false)
   const joinAttemptedRef = useRef(false)
+  const leaveRoomRef = useRef(leaveRoom)
 
   const userName = searchParams.get('name')
+
+  // Keep leaveRoom ref updated
+  useEffect(() => {
+    leaveRoomRef.current = leaveRoom
+  }, [leaveRoom])
 
   useEffect(() => {
     if (!roomCode || !userName) {
@@ -32,14 +38,14 @@ export const Room: React.FC = () => {
     }
   }, [roomCode, userName, connected, hasJoined, joinRoom, navigate])
 
-  // Separate cleanup effect
+  // Cleanup effect - only runs on unmount
   useEffect(() => {
     return () => {
-      if (hasJoined) {
-        leaveRoom()
+      if (joinAttemptedRef.current) {
+        leaveRoomRef.current()
       }
     }
-  }, [hasJoined, leaveRoom])
+  }, [])
 
   const handleCopyRoomCode = () => {
     if (room) {

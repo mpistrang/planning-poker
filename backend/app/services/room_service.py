@@ -13,9 +13,17 @@ logger = logging.getLogger(__name__)
 
 class RoomService:
     @staticmethod
-    def create_room() -> Room:
-        """Create a new room with a unique room code"""
-        room_code = generate_room_code()
+    def create_room(room_code: Optional[str] = None) -> Room:
+        """Create a new room with a unique room code or use provided code"""
+        if not room_code:
+            room_code = generate_room_code()
+        else:
+            # Check if room with this code already exists
+            existing_room = RoomService.get_room(room_code)
+            if existing_room:
+                logger.info(f"Room {room_code} already exists, returning existing room")
+                return existing_room
+
         now = datetime.utcnow().isoformat() + "Z"
 
         room = Room(
@@ -52,17 +60,32 @@ class RoomService:
         return redis_service.delete(f"room:{room_code}")
 
     @staticmethod
-    def add_user(room_code: str, user_name: str) -> Optional[tuple[Room, User]]:
-        """Add a user to a room"""
+    def add_user(room_code: str, user_name: str, user_id: Optional[str] = None) -> Optional[tuple[Room, User]]:
+        """Add a user to a room or rejoin if user_id exists"""
         room = RoomService.get_room(room_code)
         if not room:
             return None
 
-        user_id = str(uuid.uuid4())
         now = datetime.utcnow().isoformat() + "Z"
+
+        logger.info(f"add_user called: room_code={room_code}, user_name={user_name}, user_id={user_id}, current_users={len(room.users)}")
+
+        # Check if user_id provided and exists in room (rejoining)
+        if user_id and user_id in room.users:
+            user = room.users[user_id]
+            user.connected = True
+            user.name = user_name  # Update name in case it changed
+            RoomService.save_room(room)
+            logger.info(f"User {user_name} ({user_id}) rejoined room {room_code}")
+            return room, user
+
+        # New user - generate new ID
+        user_id = str(uuid.uuid4())
 
         # First user is facilitator
         is_facilitator = len(room.users) == 0
+
+        logger.info(f"Creating new user: user_id={user_id}, is_facilitator={is_facilitator}, room has {len(room.users)} users")
 
         user = User(
             id=user_id,
@@ -76,7 +99,7 @@ class RoomService:
         room.users[user_id] = user
         RoomService.save_room(room)
 
-        logger.info(f"User {user_name} ({user_id}) joined room {room_code}")
+        logger.info(f"User {user_name} ({user_id}) joined room {room_code}, now has {len(room.users)} users")
         return room, user
 
     @staticmethod

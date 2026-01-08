@@ -59,6 +59,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     socket.on('room_joined', (data: RoomJoinedData) => {
       console.log('Joined room:', data)
       setCurrentUserId(data.user_id)
+
+      // Store user_id in localStorage for this room
+      const storageKey = `planning_poker_user_${data.room_code}`
+      localStorage.setItem(storageKey, data.user_id)
     })
 
     socket.on('room_state', (data: Room) => {
@@ -205,6 +209,13 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       // If it's me being kicked, show message and clear room
       if (data.user_id === currentUserId) {
         setError('You have been removed from the room by the facilitator')
+
+        // Clean up localStorage
+        if (room) {
+          const storageKey = `planning_poker_user_${room.room_code}`
+          localStorage.removeItem(storageKey)
+        }
+
         setRoom(null)
         setCurrentUserId(null)
       }
@@ -235,15 +246,29 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       setError('Not connected to server')
       return
     }
-    socket.emit('join_room', { room_code: roomCode, user_name: userName })
+
+    // Check if we have a stored user_id for this room
+    const storageKey = `planning_poker_user_${roomCode}`
+    const storedUserId = localStorage.getItem(storageKey)
+
+    socket.emit('join_room', {
+      room_code: roomCode,
+      user_name: userName,
+      user_id: storedUserId
+    })
   }, [socket, connected])
 
   const leaveRoom = useCallback(() => {
-    if (!socket) return
+    if (!socket || !room) return
     socket.emit('leave_room')
+
+    // Clean up localStorage for this room
+    const storageKey = `planning_poker_user_${room.room_code}`
+    localStorage.removeItem(storageKey)
+
     setRoom(null)
     setCurrentUserId(null)
-  }, [socket])
+  }, [socket, room])
 
   const submitVote = useCallback((vote: string) => {
     if (!socket || !currentUserId) return

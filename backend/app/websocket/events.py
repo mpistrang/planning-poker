@@ -65,14 +65,16 @@ async def join_room(sid, data):
             await sio.emit('error', ErrorData(message="User name is required").model_dump(), to=sid)
             return
 
-        # Check if room exists, if not create it
+        # Check if room exists, if not create it with the provided code
         room = room_service.get_room(room_code)
         if not room:
-            room = room_service.create_room()
-            room_code = room.room_code  # Use the generated code
+            room = room_service.create_room(room_code)
 
-        # Add user to room
-        result = room_service.add_user(room_code, user_name)
+        # Check if this is a rejoin (user_id exists in room)
+        is_rejoining = join_data.user_id and room and join_data.user_id in room.users
+
+        # Add user to room (or rejoin if user_id provided and exists)
+        result = room_service.add_user(room_code, user_name, join_data.user_id)
         if not result:
             await sio.emit('error', ErrorData(message="Failed to join room").model_dump(), to=sid)
             return
@@ -98,12 +100,14 @@ async def join_room(sid, data):
         # Send full room state to user
         await sio.emit('room_state', room.model_dump(), to=sid)
 
-        # Notify other users
-        await sio.emit('user_joined', {
-            'user': user.model_dump()
-        }, room=room_code, skip_sid=sid)
-
-        logger.info(f"User {user_name} joined room {room_code}")
+        # Only notify other users if this is a new join (not a rejoin)
+        if not is_rejoining:
+            await sio.emit('user_joined', {
+                'user': user.model_dump()
+            }, room=room_code, skip_sid=sid)
+            logger.info(f"User {user_name} joined room {room_code}")
+        else:
+            logger.info(f"User {user_name} rejoined room {room_code}")
 
     except Exception as e:
         logger.error(f"Error in join_room: {e}")

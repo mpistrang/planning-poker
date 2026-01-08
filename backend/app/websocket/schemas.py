@@ -5,6 +5,7 @@ from typing import Optional, Dict
 class JoinRoomData(BaseModel):
     room_code: str
     user_name: str
+    user_id: Optional[str] = None
 
 
 class SubmitVoteData(BaseModel):

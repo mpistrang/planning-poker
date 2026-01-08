@@ -37,21 +37,16 @@ services:
     staticPublishPath: dist
     rootDir: frontend
     envVars:
-      # NOTE: These environment variables will be set with incomplete values (just hostname)
-      # After deployment, manually update them to full URLs in the Render dashboard:
-      # VITE_WS_URL: https://planning-poker-backend-xyz.onrender.com
-      # VITE_API_URL: https://planning-poker-backend-xyz.onrender.com
-      # Then rebuild the frontend for changes to take effect
       - key: VITE_WS_URL
         fromService:
           type: web
-          name: planning-poker-backend
-          property: host
+          name: planning-poker-backend.onrender.com
+          property: url
       - key: VITE_API_URL
         fromService:
           type: web
-          name: planning-poker-backend
-          property: host
+          name: planning-poker-backend.onrender.com
+          property: url
     routes:
       - type: rewrite
         source: /*
