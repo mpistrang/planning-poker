@@ -8,7 +8,7 @@ A real-time planning poker application for agile scrum teams, built with React, 
 
 - Create and join ephemeral rooms with unique room codes
 - Real-time voting with WebSocket communication
-- Standard Fibonacci sequence cards (0, .5, 1, 2, 3, 5, 8, 13, 21, ?, ☕)
+- Standard Fibonacci sequence cards (0, .5, 1, 2, 3, 5, 8, 13, ?, ☕)
 - Facilitator controls for revealing votes and resetting rounds
 - Clean, minimal UI with Tailwind CSS
 - No authentication required - just enter your name and start voting

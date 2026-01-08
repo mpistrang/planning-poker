@@ -7,7 +7,6 @@ export const CARD_VALUES = [
   "5",
   "8",
   "13",
-  "21",
   "?",
   "☕",
 ] as const;
