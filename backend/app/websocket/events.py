@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 sessions: Dict[str, Dict[str, str]] = {}
 
 # Valid vote options
-VALID_VOTES = {"0", ".5", "1", "2", "3", "5", "8", "13", "?", "☕"}
+VALID_VOTES = {"0", "0.5", "1", "2", "3", "5", "8", "13", "?", "☕"}
 
 
 @sio.event
@@ -161,7 +161,7 @@ async def submit_vote(sid, data):
 
         # Validate vote
         if vote_data.vote not in VALID_VOTES:
-            await sio.emit('error', ErrorData(message="Invalid vote value").model_dump(), to=sid)
+            await sio.emit('error', ErrorData(message="Invalid vote value " + vote_data.vote).model_dump(), to=sid)
             return
 
         # Submit vote
