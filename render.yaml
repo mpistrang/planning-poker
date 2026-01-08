@@ -40,12 +40,12 @@ services:
       - key: VITE_WS_URL
         fromService:
           type: web
-          name: planning-poker-backend.onrender.com
+          name: planning-poker-backend
           property: host
       - key: VITE_API_URL
         fromService:
           type: web
-          name: planning-poker-backend.onrender.com
+          name: planning-poker-backend
           property: host
     routes:
       - type: rewrite
