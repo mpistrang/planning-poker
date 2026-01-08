@@ -19,7 +19,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8008:8000"
+      - "8011:8000"
     volumes:
       - ./backend:/app
     environment:
@@ -27,7 +27,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - ROOM_TTL=86400
-      - CORS_ORIGINS=http://localhost:5173
+      - CORS_ORIGINS=http://localhost:8010
       - ENVIRONMENT=development
       - LOG_LEVEL=INFO
     depends_on:
@@ -42,13 +42,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "8010:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8008
-      - VITE_WS_URL=http://localhost:8008
+      - VITE_API_URL=http://localhost:8011
+      - VITE_WS_URL=http://localhost:8011
     depends_on:
       - backend
     command: npm run dev -- --host
